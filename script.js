@@ -9,13 +9,17 @@ const applicationMessage = document.getElementById('application-message');
 const applicationsSection = document.getElementById('applications-section');
 const applicationCountLabel = document.getElementById('application-count');
 const applicationsList = document.getElementById('applications-list');
+const postedJobsSection = document.getElementById('posted-jobs-section');
+const postedJobCountLabel = document.getElementById('posted-job-count');
+const postedJobsList = document.getElementById('posted-jobs-list');
 const userNameInput = document.getElementById('user-name');
 const userEmailInput = document.getElementById('user-email');
 const userRoleSelect = document.getElementById('user-role');
 
 let jobs = [];
 let applications = [];
-let applicationPollInterval = null;
+let employerJobs = [];
+let pollingInterval = null;
 
 function setMessage(text, type = 'info') {
   applicationMessage.textContent = text;
@@ -47,29 +51,79 @@ function getApplicantData(allowEmptyEmail = false) {
   return { name, email, role };
 }
 
-function getApplicantEmail() {
-  return userEmailInput.value.trim().toLowerCase();
+function shouldShowJobSeekerSections() {
+  const user = getApplicantData(true);
+  return user && user.role === 'job_seeker' && user.email;
 }
 
-function shouldShowApplications() {
-  const applicant = getApplicantData(true);
-  return applicant && applicant.role === 'job_seeker' && applicant.email;
+function shouldShowEmployerSections() {
+  const user = getApplicantData(true);
+  return user && user.role === 'employer' && user.email;
+}
+
+function getUserHeaderOptions() {
+  return {
+    headers: {
+      'x-user-role': userRoleSelect.value,
+      'x-user-email': userEmailInput.value.trim().toLowerCase(),
+      'x-user-name': userNameInput.value.trim(),
+    },
+  };
+}
+
+async function fetchApplicationsForJob(jobId) {
+  const url = `${apiUrl}/applications?jobId=${encodeURIComponent(jobId)}`;
+  const response = await fetch(url, getUserHeaderOptions());
+  if (!response.ok) {
+    throw new Error('Unable to load applicants for posted jobs.');
+  }
+  const data = await response.json();
+  return Array.isArray(data.applications) ? data.applications : [];
+}
+
+async function fetchPostedJobs() {
+  if (!shouldShowEmployerSections()) {
+    employerJobs = [];
+    renderPostedJobs();
+    return;
+  }
+
+  const email = userEmailInput.value.trim().toLowerCase();
+
+  try {
+    const response = await fetch(`${apiUrl}/jobs?postedByEmail=${encodeURIComponent(email)}`);
+    if (!response.ok) {
+      throw new Error('Unable to load posted jobs.');
+    }
+
+    const data = await response.json();
+    employerJobs = Array.isArray(data.jobs) ? data.jobs : [];
+
+    await Promise.all(employerJobs.map(async (job) => {
+      job.applicants = await fetchApplicationsForJob(job._id);
+    }));
+
+    renderPostedJobs();
+  } catch (error) {
+    employerJobs = [];
+    renderPostedJobs();
+    console.error('Employer job fetch error:', error);
+  }
 }
 
 async function fetchApplications() {
-  if (!shouldShowApplications()) {
+  if (!shouldShowJobSeekerSections()) {
     applications = [];
     renderApplications();
     return;
   }
 
-  const email = getApplicantEmail();
+  const email = userEmailInput.value.trim().toLowerCase();
   try {
     const response = await fetch(`${apiUrl}/applications?applicantEmail=${encodeURIComponent(email)}`);
     if (!response.ok) {
-      throw new Error(`Server returned ${response.status}`);
+      throw new Error('Unable to load applications.');
     }
-
     const data = await response.json();
     applications = Array.isArray(data.applications) ? data.applications : [];
     renderApplications();
@@ -96,6 +150,7 @@ async function fetchJobs() {
     jobs = Array.isArray(data.jobs) ? data.jobs : [];
     renderJobs();
     await fetchApplications();
+    await fetchPostedJobs();
   } catch (error) {
     jobCountLabel.textContent = 'Failed to load jobs.';
     jobsList.innerHTML = `<div class="message">Unable to fetch jobs. Make sure the backend is running at ${apiUrl}</div>`;
@@ -144,8 +199,32 @@ async function applyToJob(jobId) {
   }
 }
 
+async function updateApplicationStatus(applicationId, status) {
+  try {
+    const response = await fetch(`${apiUrl}/applications/${encodeURIComponent(applicationId)}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getUserHeaderOptions().headers,
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to update status');
+    }
+
+    setMessage(data.message, 'success');
+    await fetchPostedJobs();
+  } catch (error) {
+    setMessage(error.message, 'error');
+    console.error('Status update error:', error);
+  }
+}
+
 function renderApplications() {
-  if (!shouldShowApplications()) {
+  if (!shouldShowJobSeekerSections()) {
     applicationsSection.style.display = 'none';
     return;
   }
@@ -172,6 +251,56 @@ function renderApplications() {
   `).join('');
 
   applicationCountLabel.textContent = `${applications.length} application${applications.length === 1 ? '' : 's'}`;
+}
+
+function renderPostedJobs() {
+  if (!shouldShowEmployerSections()) {
+    postedJobsSection.style.display = 'none';
+    return;
+  }
+
+  postedJobsSection.style.display = 'block';
+
+  if (!employerJobs.length) {
+    postedJobsList.innerHTML = '<div class="message">You have not posted any jobs yet.</div>';
+    postedJobCountLabel.textContent = '0 posted jobs';
+    return;
+  }
+
+  postedJobsList.innerHTML = employerJobs.map((job) => {
+    const skills = Array.isArray(job.skills) ? job.skills.join(', ') : job.skills;
+    const applicants = Array.isArray(job.applicants) ? job.applicants : [];
+    const applicantRows = applicants.length
+      ? applicants.map((app) => `
+        <div class="applicant-row">
+          <span>${app.applicantName} (${app.applicantEmail})</span>
+          <span class="status-pill">${app.status}</span>
+          <div class="action-buttons">
+            <button type="button" data-app-id="${app._id}" data-status="Shortlisted">Shortlist</button>
+            <button type="button" data-app-id="${app._id}" data-status="Interview">Interview</button>
+            <button type="button" data-app-id="${app._id}" data-status="Rejected">Reject</button>
+          </div>
+        </div>
+      `).join('')
+      : '<div class="message">No applicants yet.</div>';
+
+    return `
+      <article class="job-card">
+        <h2>${job.title}</h2>
+        <div class="job-meta">
+          <span><strong>Skills:</strong> ${skills || 'N/A'}</span>
+          <span><strong>Applicants:</strong> ${applicants.length}</span>
+        </div>
+        <p>${job.description}</p>
+        <div class="applicant-list">${applicantRows}</div>
+      </article>
+    `;
+  }).join('');
+
+  postedJobCountLabel.textContent = `${employerJobs.length} posted job${employerJobs.length === 1 ? '' : 's'}`;
+  postedJobsList.querySelectorAll('button').forEach((button) => {
+    button.addEventListener('click', () => updateApplicationStatus(button.dataset.appId, button.dataset.status));
+  });
 }
 
 function renderJobs() {
@@ -220,16 +349,14 @@ function renderJobs() {
   });
 }
 
-function updateApplicationPolling() {
-  clearInterval(applicationPollInterval);
-  if (!shouldShowApplications()) {
-    applications = [];
-    renderApplications();
-    return;
-  }
-
+function updatePolling() {
+  clearInterval(pollingInterval);
   fetchApplications();
-  applicationPollInterval = setInterval(fetchApplications, 10000);
+  fetchPostedJobs();
+  pollingInterval = setInterval(() => {
+    fetchApplications();
+    fetchPostedJobs();
+  }, 10000);
 }
 
 clearFiltersButton.addEventListener('click', () => {
@@ -241,7 +368,7 @@ clearFiltersButton.addEventListener('click', () => {
 skillFilter.addEventListener('input', renderJobs);
 companyFilter.addEventListener('input', renderJobs);
 refreshJobsButton.addEventListener('click', fetchJobs);
-userEmailInput.addEventListener('input', updateApplicationPolling);
-userRoleSelect.addEventListener('change', updateApplicationPolling);
+userEmailInput.addEventListener('input', updatePolling);
+userRoleSelect.addEventListener('change', updatePolling);
 
 fetchJobs();

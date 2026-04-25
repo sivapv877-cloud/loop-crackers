@@ -178,6 +178,55 @@ button:hover {
   border: 1px solid #e2e8f0;
 }
 
+.posted-jobs-section {
+  margin-bottom: 28px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.posted-jobs-list {
+  display: grid;
+  gap: 14px;
+}
+
+.applicant-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.applicant-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid #d1d5db;
+}
+
+.status-pill {
+  padding: 6px 10px;
+  border-radius: 9999px;
+  background: #e0f2fe;
+  color: #0c4a6e;
+  font-weight: 600;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.action-buttons button {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
 .application-card h3 {
   margin: 0 0 10px;
 }

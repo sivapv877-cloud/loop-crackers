@@ -144,9 +144,11 @@ app.post('/jobs', requireRole(['employer']), async (req, res) => {
 });
 
 app.get('/jobs', async (req, res) => {
+  const { postedByEmail } = req.query;
   const db = req.app.locals.db;
   const jobs = db.collection('Jobs');
-  const allJobs = await jobs.find({}).toArray();
+  const query = postedByEmail ? { postedByEmail: postedByEmail.toLowerCase() } : {};
+  const allJobs = await jobs.find(query).toArray();
   res.json({ success: true, jobs: allJobs });
 });
 
@@ -198,19 +200,51 @@ app.post('/applications', async (req, res) => {
 });
 
 app.get('/applications', async (req, res) => {
-  const { applicantEmail } = req.query;
-  if (!applicantEmail) {
-    return res.status(400).json({ success: false, message: 'applicantEmail query parameter is required.' });
-  }
-
+  const { applicantEmail, jobId } = req.query;
   const db = req.app.locals.db;
   const applications = db.collection('Applications');
-  const results = await applications
-    .find({ applicantEmail: applicantEmail.toLowerCase() })
-    .sort({ createdAt: -1 })
-    .toArray();
 
-  res.json({ success: true, applications: results });
+  if (applicantEmail) {
+    const results = await applications
+      .find({ applicantEmail: applicantEmail.toLowerCase() })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return res.json({ success: true, applications: results });
+  }
+
+  if (jobId) {
+    const userRole = req.get('x-user-role');
+    const userEmail = req.get('x-user-email')?.toLowerCase();
+    if (userRole !== 'employer' || !userEmail) {
+      return res.status(403).json({ success: false, message: 'Employer access required to view applicants.' });
+    }
+
+    const jobs = db.collection('Jobs');
+    let job;
+    try {
+      job = await jobs.findOne({ _id: new ObjectId(jobId) });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: 'Invalid jobId format.' });
+    }
+
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job not found.' });
+    }
+
+    if (job.postedByEmail !== userEmail) {
+      return res.status(403).json({ success: false, message: 'You are not authorized to view applicants for this job.' });
+    }
+
+    const results = await applications
+      .find({ jobId: job._id })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return res.json({ success: true, applications: results });
+  }
+
+  return res.status(400).json({ success: false, message: 'applicantEmail or jobId query parameter is required.' });
 });
 
 app.patch('/applications/:id/status', requireRole(['employer']), async (req, res) => {
