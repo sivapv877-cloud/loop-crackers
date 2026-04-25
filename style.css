@@ -139,6 +139,62 @@ button:hover {
   line-height: 1.6;
 }
 
+.job-status {
+  margin-top: 12px;
+  font-weight: 600;
+  color: #1d4ed8;
+}
+
+.apply-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.applications-section {
+  margin-bottom: 28px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.applications-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.applications-list {
+  display: grid;
+  gap: 14px;
+}
+
+.application-card {
+  padding: 16px;
+  border-radius: 14px;
+  background: white;
+  border: 1px solid #e2e8f0;
+}
+
+.application-card h3 {
+  margin: 0 0 10px;
+}
+
+.application-info,
+.application-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.application-card span {
+  display: inline-flex;
+  gap: 4px;
+}
+
 .message {
   padding: 24px;
   border-radius: 14px;

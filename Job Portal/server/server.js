@@ -197,6 +197,22 @@ app.post('/applications', async (req, res) => {
   });
 });
 
+app.get('/applications', async (req, res) => {
+  const { applicantEmail } = req.query;
+  if (!applicantEmail) {
+    return res.status(400).json({ success: false, message: 'applicantEmail query parameter is required.' });
+  }
+
+  const db = req.app.locals.db;
+  const applications = db.collection('Applications');
+  const results = await applications
+    .find({ applicantEmail: applicantEmail.toLowerCase() })
+    .sort({ createdAt: -1 })
+    .toArray();
+
+  res.json({ success: true, applications: results });
+});
+
 app.patch('/applications/:id/status', requireRole(['employer']), async (req, res) => {
   const { status } = req.body;
   const applicationId = req.params.id;

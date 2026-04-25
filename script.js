@@ -6,11 +6,16 @@ const refreshJobsButton = document.getElementById('refresh-jobs');
 const jobCountLabel = document.getElementById('job-count');
 const jobsList = document.getElementById('jobs-list');
 const applicationMessage = document.getElementById('application-message');
+const applicationsSection = document.getElementById('applications-section');
+const applicationCountLabel = document.getElementById('application-count');
+const applicationsList = document.getElementById('applications-list');
 const userNameInput = document.getElementById('user-name');
 const userEmailInput = document.getElementById('user-email');
 const userRoleSelect = document.getElementById('user-role');
 
 let jobs = [];
+let applications = [];
+let applicationPollInterval = null;
 
 function setMessage(text, type = 'info') {
   applicationMessage.textContent = text;
@@ -22,17 +27,58 @@ function clearMessage() {
   applicationMessage.className = 'application-message';
 }
 
-function getApplicantData() {
+function getApplicantData(allowEmptyEmail = false) {
   const name = userNameInput.value.trim();
   const email = userEmailInput.value.trim();
   const role = userRoleSelect.value;
 
-  if (!name || !email) {
-    setMessage('Please enter your name and email before applying.', 'error');
+  if (!name) {
+    if (!allowEmptyEmail) {
+      setMessage('Please enter your name before applying.', 'error');
+    }
+    return null;
+  }
+
+  if (!email && !allowEmptyEmail) {
+    setMessage('Please enter your email before applying.', 'error');
     return null;
   }
 
   return { name, email, role };
+}
+
+function getApplicantEmail() {
+  return userEmailInput.value.trim().toLowerCase();
+}
+
+function shouldShowApplications() {
+  const applicant = getApplicantData(true);
+  return applicant && applicant.role === 'job_seeker' && applicant.email;
+}
+
+async function fetchApplications() {
+  if (!shouldShowApplications()) {
+    applications = [];
+    renderApplications();
+    return;
+  }
+
+  const email = getApplicantEmail();
+  try {
+    const response = await fetch(`${apiUrl}/applications?applicantEmail=${encodeURIComponent(email)}`);
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    applications = Array.isArray(data.applications) ? data.applications : [];
+    renderApplications();
+  } catch (error) {
+    applications = [];
+    renderApplications();
+    setMessage('Unable to load your applications right now.', 'error');
+    console.error('Failed to fetch applications:', error);
+  }
 }
 
 async function fetchJobs() {
@@ -49,6 +95,7 @@ async function fetchJobs() {
     const data = await response.json();
     jobs = Array.isArray(data.jobs) ? data.jobs : [];
     renderJobs();
+    await fetchApplications();
   } catch (error) {
     jobCountLabel.textContent = 'Failed to load jobs.';
     jobsList.innerHTML = `<div class="message">Unable to fetch jobs. Make sure the backend is running at ${apiUrl}</div>`;
@@ -89,15 +136,48 @@ async function applyToJob(jobId) {
     }
 
     setMessage(data.message, 'success');
+    await fetchApplications();
+    renderJobs();
   } catch (error) {
     setMessage(error.message, 'error');
     console.error('Application error:', error);
   }
 }
 
+function renderApplications() {
+  if (!shouldShowApplications()) {
+    applicationsSection.style.display = 'none';
+    return;
+  }
+
+  applicationsSection.style.display = 'block';
+
+  if (!applications.length) {
+    applicationsList.innerHTML = '<div class="message">You have not applied to any jobs yet.</div>';
+    applicationCountLabel.textContent = '0 applications';
+    return;
+  }
+
+  applicationsList.innerHTML = applications.map((application) => `
+    <article class="application-card">
+      <div class="application-info">
+        <h3>${application.jobTitle}</h3>
+        <span><strong>Status:</strong> ${application.status}</span>
+        <span><strong>Applied on:</strong> ${new Date(application.createdAt).toLocaleDateString()}</span>
+      </div>
+      <div class="application-meta">
+        <span><strong>Email:</strong> ${application.applicantEmail}</span>
+      </div>
+    </article>
+  `).join('');
+
+  applicationCountLabel.textContent = `${applications.length} application${applications.length === 1 ? '' : 's'}`;
+}
+
 function renderJobs() {
   const skillQuery = skillFilter.value.trim().toLowerCase();
   const companyQuery = companyFilter.value.trim().toLowerCase();
+  const appliedJobIds = new Set(applications.map((app) => String(app.jobId)));
 
   const filteredJobs = jobs.filter((job) => {
     const matchesSkill = !skillQuery || (Array.isArray(job.skills) && job.skills.some((skill) => skill.toLowerCase().includes(skillQuery)));
@@ -114,6 +194,10 @@ function renderJobs() {
 
   jobsList.innerHTML = filteredJobs.map((job) => {
     const skills = Array.isArray(job.skills) ? job.skills.join(', ') : job.skills;
+    const jobId = String(job._id);
+    const isApplied = appliedJobIds.has(jobId);
+    const appliedData = applications.find((app) => String(app.jobId) === jobId);
+    const statusLabel = isApplied ? `<div class="job-status">Status: ${appliedData?.status || 'Applied'}</div>` : '';
     return `
       <article class="job-card">
         <h2>${job.title}</h2>
@@ -122,7 +206,10 @@ function renderJobs() {
           <span><strong>Skills:</strong> ${skills || 'N/A'}</span>
         </div>
         <p>${job.description}</p>
-        <button type="button" class="apply-button" data-job-id="${job._id}">Apply</button>
+        ${statusLabel}
+        <button type="button" class="apply-button" data-job-id="${jobId}" ${isApplied ? 'disabled' : ''}>
+          ${isApplied ? 'Applied' : 'Apply'}
+        </button>
       </article>
     `;
   }).join('');
@@ -131,6 +218,18 @@ function renderJobs() {
   document.querySelectorAll('.apply-button').forEach((button) => {
     button.addEventListener('click', () => applyToJob(button.dataset.jobId));
   });
+}
+
+function updateApplicationPolling() {
+  clearInterval(applicationPollInterval);
+  if (!shouldShowApplications()) {
+    applications = [];
+    renderApplications();
+    return;
+  }
+
+  fetchApplications();
+  applicationPollInterval = setInterval(fetchApplications, 10000);
 }
 
 clearFiltersButton.addEventListener('click', () => {
@@ -142,5 +241,7 @@ clearFiltersButton.addEventListener('click', () => {
 skillFilter.addEventListener('input', renderJobs);
 companyFilter.addEventListener('input', renderJobs);
 refreshJobsButton.addEventListener('click', fetchJobs);
+userEmailInput.addEventListener('input', updateApplicationPolling);
+userRoleSelect.addEventListener('change', updateApplicationPolling);
 
 fetchJobs();
