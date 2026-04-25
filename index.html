@@ -9,6 +9,24 @@
 <body>
   <div class="container">
     <h1>Job Portal</h1>
+    <div class="user-panel">
+      <div class="filter-field">
+        <label for="user-name">Your name</label>
+        <input id="user-name" type="text" placeholder="Job seeker name" />
+      </div>
+      <div class="filter-field">
+        <label for="user-email">Your email</label>
+        <input id="user-email" type="email" placeholder="name@example.com" />
+      </div>
+      <div class="filter-field">
+        <label for="user-role">Your role</label>
+        <select id="user-role">
+          <option value="job_seeker">Job Seeker</option>
+          <option value="employer">Employer</option>
+        </select>
+      </div>
+    </div>
+
     <div class="filter-panel">
       <div class="filter-field">
         <label for="skill-filter">Filter by skill</label>
@@ -26,6 +44,7 @@
       <button id="refresh-jobs">Refresh jobs</button>
     </div>
 
+    <div id="application-message" class="application-message"></div>
     <div id="jobs-list" class="jobs-list"></div>
   </div>
   <script src="script.js"></script>

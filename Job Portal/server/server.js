@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -147,6 +147,52 @@ app.get('/jobs', async (req, res) => {
   const jobs = db.collection('Jobs');
   const allJobs = await jobs.find({}).toArray();
   res.json({ success: true, jobs: allJobs });
+});
+
+app.post('/applications', async (req, res) => {
+  const { jobId, applicantName, applicantEmail, applicantRole } = req.body;
+  if (!jobId || !applicantName || !applicantEmail || !applicantRole) {
+    return res.status(400).json({ success: false, message: 'jobId, applicantName, applicantEmail, and applicantRole are required.' });
+  }
+
+  if (applicantRole !== 'job_seeker') {
+    return res.status(403).json({ success: false, message: 'Only job seekers can apply to jobs.' });
+  }
+
+  const db = req.app.locals.db;
+  const jobs = db.collection('Jobs');
+  const applications = db.collection('Applications');
+
+  let job;
+  try {
+    job = await jobs.findOne({ _id: new ObjectId(jobId) });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: 'Invalid jobId format.' });
+  }
+
+  if (!job) {
+    return res.status(404).json({ success: false, message: 'Job not found.' });
+  }
+
+  const existingApplication = await applications.findOne({ jobId: job._id, applicantEmail: applicantEmail.toLowerCase() });
+  if (existingApplication) {
+    return res.status(409).json({ success: false, message: 'You have already applied to this job.' });
+  }
+
+  const result = await applications.insertOne({
+    jobId: job._id,
+    jobTitle: job.title,
+    applicantName,
+    applicantEmail: applicantEmail.toLowerCase(),
+    applicantRole,
+    createdAt: new Date(),
+  });
+
+  res.status(201).json({
+    success: true,
+    message: 'Application submitted successfully.',
+    applicationId: result.insertedId,
+  });
 });
 
 async function ensureCollections(db) {
