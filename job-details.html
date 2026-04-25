@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Details - Loop Crackers</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-brand"><a href="index.html">Loop Crackers</a></div>
+    <nav class="page-nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+    </nav>
+  </header>
+
+  <main class="container details-container" id="job-details-root">
+    <section class="details-panel">
+      <div class="details-card">
+        <div class="details-header">
+          <h1 id="job-details-title">Loading job details...</h1>
+          <p id="job-details-company" class="details-company"></p>
+        </div>
+        <div id="job-details-skills" class="job-meta"></div>
+        <p id="job-details-description" class="job-description"></p>
+        <div id="job-details-match" class="job-match"></div>
+        <div id="job-details-progress" class="application-progress"></div>
+
+        <section class="user-panel details-user-panel">
+          <div class="filter-field">
+            <label for="user-name">Your name</label>
+            <input id="user-name" type="text" placeholder="Job seeker name" />
+          </div>
+          <div class="filter-field">
+            <label for="user-email">Your email</label>
+            <input id="user-email" type="email" placeholder="name@example.com" />
+          </div>
+          <div class="filter-field">
+            <label for="user-skills">Your skills</label>
+            <input id="user-skills" type="text" placeholder="e.g. JavaScript, React, SQL" />
+          </div>
+          <div class="filter-field">
+            <label for="user-role">Your role</label>
+            <select id="user-role">
+              <option value="job_seeker">Job Seeker</option>
+              <option value="employer">Employer</option>
+            </select>
+          </div>
+        </section>
+
+        <div id="job-details-actions" class="details-actions"></div>
+        <div id="job-details-message" class="application-message"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,4 +1,6 @@
 const apiUrl = 'http://localhost:3000';
+const dashboardRoot = document.getElementById('dashboard-root');
+const jobDetailsRoot = document.getElementById('job-details-root');
 const skillFilter = document.getElementById('skill-filter');
 const companyFilter = document.getElementById('company-filter');
 const clearFiltersButton = document.getElementById('clear-filters');
@@ -16,6 +18,14 @@ const userNameInput = document.getElementById('user-name');
 const userEmailInput = document.getElementById('user-email');
 const userSkillsInput = document.getElementById('user-skills');
 const userRoleSelect = document.getElementById('user-role');
+const jobDetailsTitle = document.getElementById('job-details-title');
+const jobDetailsCompany = document.getElementById('job-details-company');
+const jobDetailsSkills = document.getElementById('job-details-skills');
+const jobDetailsDescription = document.getElementById('job-details-description');
+const jobDetailsMatch = document.getElementById('job-details-match');
+const jobDetailsProgress = document.getElementById('job-details-progress');
+const jobDetailsActions = document.getElementById('job-details-actions');
+const jobDetailsMessage = document.getElementById('job-details-message');
 
 let jobs = [];
 let applications = [];
@@ -24,8 +34,14 @@ let pollingInterval = null;
 let previousApplicationStatuses = {};
 
 function setMessage(text, type = 'info') {
-  applicationMessage.textContent = text;
-  applicationMessage.className = `application-message ${type}`;
+  const messageElement = applicationMessage || jobDetailsMessage;
+  if (!messageElement) {
+    console.warn('No message element available');
+    return;
+  }
+
+  messageElement.textContent = text;
+  messageElement.className = `application-message ${type}`;
 }
 
 function detectStatusChanges(newApplications) {
@@ -48,8 +64,13 @@ function detectStatusChanges(newApplications) {
 }
 
 function clearMessage() {
-  applicationMessage.textContent = '';
-  applicationMessage.className = 'application-message';
+  const messageElement = applicationMessage || jobDetailsMessage;
+  if (!messageElement) {
+    return;
+  }
+
+  messageElement.textContent = '';
+  messageElement.className = 'application-message';
 }
 
 function getApplicantData(allowEmptyEmail = false) {
@@ -256,8 +277,12 @@ async function applyToJob(jobId) {
     }
 
     setMessage(data.message, 'success');
-    await fetchApplications();
-    renderJobs();
+    if (jobDetailsRoot) {
+      await fetchJobDetails();
+    } else {
+      await fetchApplications();
+      renderJobs();
+    }
   } catch (error) {
     setMessage(error.message, 'error');
     console.error('Application error:', error);
@@ -377,6 +402,71 @@ function renderPostedJobs() {
   });
 }
 
+function renderJobDetails(job) {
+  if (!jobDetailsRoot) {
+    return;
+  }
+
+  jobDetailsTitle.textContent = job.title;
+  jobDetailsCompany.textContent = `Company: ${job.postedByName || job.postedByEmail || 'Unknown'}`;
+  jobDetailsSkills.textContent = `Skills: ${Array.isArray(job.skills) ? job.skills.join(', ') : job.skills || 'N/A'}`;
+  jobDetailsDescription.textContent = job.description;
+
+  const matchPercent = computeMatchPercentage(job.skills, getUserSkills());
+  jobDetailsMatch.textContent = matchPercent ? `You match ${matchPercent}% of this job` : 'Enter your skills to see your match percentage.';
+
+  const status = 'Applied';
+  const currentStep = getProgressStep(status);
+  jobDetailsProgress.innerHTML = ['Applied', 'Review', 'Interview', 'Final']
+    .map((step, index) => {
+      const stepNumber = index + 1;
+      const state = stepNumber < currentStep ? 'completed' : stepNumber === currentStep ? 'active' : '';
+      return `<span class="progress-step ${state}">${step}</span>`;
+    }).join('');
+
+  jobDetailsActions.innerHTML = shouldShowJobSeekerSections()
+    ? `<button id="job-details-apply" type="button" class="apply-button">Apply to this job</button>`
+    : '<div class="message">Select Job Seeker role and enter your email to apply.</div>';
+
+  const applyButton = document.getElementById('job-details-apply');
+  if (applyButton) {
+    applyButton.addEventListener('click', () => applyToJob(job._id));
+  }
+}
+
+async function fetchJobDetails() {
+  if (!jobDetailsRoot) {
+    return;
+  }
+
+  const jobId = getJobIdFromUrl();
+  if (!jobId) {
+    jobDetailsTitle.textContent = 'Job not found';
+    jobDetailsDescription.textContent = 'A valid job id is required to show details.';
+    return;
+  }
+
+  try {
+    const response = await fetch(`${apiUrl}/jobs`);
+    if (!response.ok) {
+      throw new Error('Unable to load job details.');
+    }
+    const data = await response.json();
+    const job = (Array.isArray(data.jobs) ? data.jobs : []).find((jobItem) => String(jobItem._id) === jobId);
+    if (!job) {
+      jobDetailsTitle.textContent = 'Job not found';
+      jobDetailsDescription.textContent = 'The requested job could not be located.';
+      return;
+    }
+
+    renderJobDetails(job);
+  } catch (error) {
+    jobDetailsTitle.textContent = 'Error loading job details';
+    jobDetailsDescription.textContent = 'Please try again later.';
+    console.error('Job details error:', error);
+  }
+}
+
 function renderJobs() {
   const skillQuery = skillFilter.value.trim().toLowerCase();
   const companyQuery = companyFilter.value.trim().toLowerCase();
@@ -417,9 +507,12 @@ function renderJobs() {
         <p>${job.description}</p>
         ${matchLabel}
         ${statusLabel}
-        <button type="button" class="apply-button" data-job-id="${jobId}" ${isApplied ? 'disabled' : ''}>
-          ${isApplied ? 'Applied' : 'Apply'}
-        </button>
+        <div class="job-actions">
+          <a class="details-link" href="job-details.html?jobId=${jobId}">View details</a>
+          <button type="button" class="apply-button" data-job-id="${jobId}" ${isApplied ? 'disabled' : ''}>
+            ${isApplied ? 'Applied' : 'Apply'}
+          </button>
+        </div>
       </article>
     `;
   }).join('');
@@ -441,17 +534,42 @@ function updatePolling() {
   }, 5000);
 }
 
-clearFiltersButton.addEventListener('click', () => {
-  skillFilter.value = '';
-  companyFilter.value = '';
-  renderJobs();
-});
+if (skillFilter) {
+  skillFilter.addEventListener('input', renderJobs);
+}
+if (companyFilter) {
+  companyFilter.addEventListener('input', renderJobs);
+}
+if (userSkillsInput) {
+  userSkillsInput.addEventListener('input', () => {
+    if (dashboardRoot) {
+      renderJobs();
+    }
+    if (jobDetailsRoot) {
+      fetchJobDetails();
+    }
+  });
+}
+if (clearFiltersButton) {
+  clearFiltersButton.addEventListener('click', () => {
+    skillFilter.value = '';
+    companyFilter.value = '';
+    renderJobs();
+  });
+}
+if (refreshJobsButton) {
+  refreshJobsButton.addEventListener('click', fetchJobs);
+}
+if (userEmailInput) {
+  userEmailInput.addEventListener('input', updatePolling);
+}
+if (userRoleSelect) {
+  userRoleSelect.addEventListener('change', updatePolling);
+}
 
-skillFilter.addEventListener('input', renderJobs);
-companyFilter.addEventListener('input', renderJobs);
-userSkillsInput.addEventListener('input', renderJobs);
-refreshJobsButton.addEventListener('click', fetchJobs);
-userEmailInput.addEventListener('input', updatePolling);
-userRoleSelect.addEventListener('change', updatePolling);
-
-fetchJobs();
+if (dashboardRoot) {
+  fetchJobs();
+}
+if (jobDetailsRoot) {
+  fetchJobDetails();
+}

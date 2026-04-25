@@ -7,67 +7,50 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Job Portal</h1>
-    <div class="user-panel">
-      <div class="filter-field">
-        <label for="user-name">Your name</label>
-        <input id="user-name" type="text" placeholder="Job seeker name" />
-      </div>
-      <div class="filter-field">
-        <label for="user-email">Your email</label>
-        <input id="user-email" type="email" placeholder="name@example.com" />
-      </div>
-      <div class="filter-field">
-        <label for="user-skills">Your skills</label>
-        <input id="user-skills" type="text" placeholder="e.g. JavaScript, React, SQL" />
-      </div>
-      <div class="filter-field">
-        <label for="user-role">Your role</label>
-        <select id="user-role">
-          <option value="job_seeker">Job Seeker</option>
-          <option value="employer">Employer</option>
-        </select>
-      </div>
-    </div>
+  <header class="page-header home-header">
+    <div class="page-brand"><a href="index.html">Loop Crackers</a></div>
+    <nav class="page-nav">
+      <a href="index.html" class="active">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+    </nav>
+  </header>
 
-    <div class="filter-panel">
-      <div class="filter-field">
-        <label for="skill-filter">Filter by skill</label>
-        <input id="skill-filter" type="text" placeholder="e.g. JavaScript" />
+  <main class="container home-container">
+    <section class="home-hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Job Portal</p>
+        <h1>Clear career workflows for job seekers and employers.</h1>
+        <p>Open the dashboard to browse jobs, track your application progress, and review job details in a clean layout.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="dashboard.html">Open Dashboard</a>
+        </div>
       </div>
-      <div class="filter-field">
-        <label for="company-filter">Filter by company</label>
-        <input id="company-filter" type="text" placeholder="e.g. Acme Inc." />
+      <div class="hero-visual">
+        <div class="hero-card">
+          <h2>Dashboard</h2>
+          <p>Search jobs, filter by skills, and keep tabs on all activity.</p>
+        </div>
+        <div class="hero-card">
+          <h2>Job details</h2>
+          <p>Inspect each posting, see your skills match, and apply directly.</p>
+        </div>
       </div>
-      <button id="clear-filters">Clear filters</button>
-    </div>
-
-    <div class="status-bar">
-      <span id="job-count">Loading jobs...</span>
-      <button id="refresh-jobs">Refresh jobs</button>
-    </div>
-
-    <div id="application-message" class="application-message"></div>
-
-    <section id="applications-section" class="applications-section">
-      <div class="applications-header">
-        <h2>Your Applications</h2>
-        <span id="application-count">Loading applications...</span>
-      </div>
-      <div id="applications-list" class="applications-list"></div>
     </section>
 
-    <section id="posted-jobs-section" class="posted-jobs-section">
-      <div class="applications-header">
-        <h2>Posted Jobs</h2>
-        <span id="posted-job-count">Loading posted jobs...</span>
-      </div>
-      <div id="posted-jobs-list" class="applications-list"></div>
+    <section class="home-features">
+      <article class="feature-card">
+        <h3>Clean layout</h3>
+        <p>A modern landing page that connects users to the dashboard instantly.</p>
+      </article>
+      <article class="feature-card">
+        <h3>Smart dashboard</h3>
+        <p>Job seekers and employers get one organized workspace for daily tasks.</p>
+      </article>
+      <article class="feature-card">
+        <h3>Job details page</h3>
+        <p>Job-specific pages make it easier to understand requirements and apply.</p>
+      </article>
     </section>
-
-    <div id="jobs-list" class="jobs-list"></div>
-  </div>
-  <script src="script.js"></script>
+  </main>
 </body>
 </html>

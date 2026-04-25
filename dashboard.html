@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - Loop Crackers</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-brand"><a href="index.html">Loop Crackers</a></div>
+    <nav class="page-nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html" class="active">Dashboard</a>
+    </nav>
+  </header>
+
+  <main class="container dashboard-container" id="dashboard-root">
+    <section class="dashboard-hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Dashboard</p>
+        <h1>Browse jobs, track applications, and manage hiring.</h1>
+        <p>Use the dashboard to search openings, monitor your application progress, and handle posted jobs from one clean workspace.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-card">
+          <strong>Fast search</strong>
+          <p>Filter jobs by skill and company.</p>
+        </div>
+        <div class="hero-card">
+          <strong>Application progress</strong>
+          <p>See each status step clearly as your application moves forward.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="user-panel">
+      <div class="filter-field">
+        <label for="user-name">Your name</label>
+        <input id="user-name" type="text" placeholder="Job seeker name" />
+      </div>
+      <div class="filter-field">
+        <label for="user-email">Your email</label>
+        <input id="user-email" type="email" placeholder="name@example.com" />
+      </div>
+      <div class="filter-field">
+        <label for="user-skills">Your skills</label>
+        <input id="user-skills" type="text" placeholder="e.g. JavaScript, React, SQL" />
+      </div>
+      <div class="filter-field">
+        <label for="user-role">Your role</label>
+        <select id="user-role">
+          <option value="job_seeker">Job Seeker</option>
+          <option value="employer">Employer</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="filter-panel">
+      <div class="filter-field">
+        <label for="skill-filter">Filter by skill</label>
+        <input id="skill-filter" type="text" placeholder="e.g. JavaScript" />
+      </div>
+      <div class="filter-field">
+        <label for="company-filter">Filter by company</label>
+        <input id="company-filter" type="text" placeholder="e.g. Acme Inc." />
+      </div>
+      <button id="clear-filters">Clear filters</button>
+    </section>
+
+    <div class="status-bar">
+      <span id="job-count">Loading jobs...</span>
+      <button id="refresh-jobs">Refresh jobs</button>
+    </div>
+
+    <div id="application-message" class="application-message"></div>
+
+    <section id="applications-section" class="applications-section">
+      <div class="applications-header">
+        <h2>Your Applications</h2>
+        <span id="application-count">Loading applications...</span>
+      </div>
+      <div id="applications-list" class="applications-list"></div>
+    </section>
+
+    <section id="posted-jobs-section" class="posted-jobs-section">
+      <div class="applications-header">
+        <h2>Posted Jobs</h2>
+        <span id="posted-job-count">Loading posted jobs...</span>
+      </div>
+      <div id="posted-jobs-list" class="applications-list"></div>
+    </section>
+
+    <div id="jobs-list" class="jobs-list"></div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
