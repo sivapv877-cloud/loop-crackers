@@ -114,6 +114,41 @@ app.get('/employer/users', requireRole(['employer']), async (req, res) => {
   res.json({ success: true, users: allUsers });
 });
 
+app.post('/jobs', requireRole(['employer']), async (req, res) => {
+  const { title, description, skills } = req.body;
+  if (!title || !description || !Array.isArray(skills) || skills.length === 0) {
+    return res.status(400).json({ success: false, message: 'Title, description, and skills are required. Skills must be a non-empty array.' });
+  }
+
+  const db = req.app.locals.db;
+  const jobs = db.collection('Jobs');
+  const newJob = {
+    title,
+    description,
+    skills,
+    postedByEmail: req.get('x-user-email')?.toLowerCase() || null,
+    postedByName: req.get('x-user-name') || null,
+    createdAt: new Date(),
+  };
+
+  const result = await jobs.insertOne(newJob);
+  res.status(201).json({
+    success: true,
+    message: 'Job created successfully.',
+    job: {
+      id: result.insertedId,
+      ...newJob,
+    },
+  });
+});
+
+app.get('/jobs', async (req, res) => {
+  const db = req.app.locals.db;
+  const jobs = db.collection('Jobs');
+  const allJobs = await jobs.find({}).toArray();
+  res.json({ success: true, jobs: allJobs });
+});
+
 async function ensureCollections(db) {
   const existingCollections = await db.listCollections({}, { nameOnly: true }).toArray();
   const existingNames = existingCollections.map((c) => c.name);
