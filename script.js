@@ -105,6 +105,22 @@ function computeMatchPercentage(jobSkills = [], userSkills = []) {
     : 0;
 }
 
+function getProgressStep(status) {
+  if (status === 'Applied') {
+    return 1;
+  }
+  if (status === 'Under Review') {
+    return 2;
+  }
+  if (status === 'Shortlisted' || status === 'Interview') {
+    return 3;
+  }
+  if (status === 'Selected' || status === 'Rejected') {
+    return 4;
+  }
+  return 1;
+}
+
 function getUserHeaderOptions() {
   return {
     headers: {
@@ -286,18 +302,27 @@ function renderApplications() {
     return;
   }
 
-  applicationsList.innerHTML = applications.map((application) => `
-    <article class="application-card">
-      <div class="application-info">
-        <h3>${application.jobTitle}</h3>
-        <span><strong>Status:</strong> ${application.status}</span>
-        <span><strong>Applied on:</strong> ${new Date(application.createdAt).toLocaleDateString()}</span>
-      </div>
-      <div class="application-meta">
-        <span><strong>Email:</strong> ${application.applicantEmail}</span>
-      </div>
-    </article>
-  `).join('');
+  applicationsList.innerHTML = applications.map((application) => {
+    const progressSteps = ['Applied', 'Review', 'Interview', 'Final'];
+    const currentStep = getProgressStep(application.status);
+    const progressHtml = progressSteps.map((step, index) => {
+      const stepNumber = index + 1;
+      const state = stepNumber < currentStep ? 'completed' : stepNumber === currentStep ? 'active' : '';
+      return `<span class="progress-step ${state}">${step}</span>`;
+    }).join('');
+
+    return `
+      <article class="application-card">
+        <div class="application-info">
+          <h3>${application.jobTitle}</h3>
+          <span><strong>Applied on:</strong> ${new Date(application.createdAt).toLocaleDateString()}</span>
+          <span><strong>Email:</strong> ${application.applicantEmail}</span>
+        </div>
+        <div class="application-progress">${progressHtml}</div>
+        <div class="application-current">Current status: ${application.status}</div>
+      </article>
+    `;
+  }).join('');
 
   applicationCountLabel.textContent = `${applications.length} application${applications.length === 1 ? '' : 's'}`;
 }
@@ -413,7 +438,7 @@ function updatePolling() {
   pollingInterval = setInterval(() => {
     fetchApplications();
     fetchPostedJobs();
-  }, 10000);
+  }, 5000);
 }
 
 clearFiltersButton.addEventListener('click', () => {
