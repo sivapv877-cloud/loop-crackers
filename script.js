@@ -20,10 +20,30 @@ let jobs = [];
 let applications = [];
 let employerJobs = [];
 let pollingInterval = null;
+let previousApplicationStatuses = {};
 
 function setMessage(text, type = 'info') {
   applicationMessage.textContent = text;
   applicationMessage.className = `application-message ${type}`;
+}
+
+function detectStatusChanges(newApplications) {
+  const changes = [];
+
+  for (const app of newApplications) {
+    const key = String(app.jobId);
+    const previous = previousApplicationStatuses[key];
+    if (previous && previous !== app.status) {
+      changes.push(`${app.jobTitle}: ${previous} → ${app.status}`);
+    }
+  }
+
+  previousApplicationStatuses = newApplications.reduce((map, app) => {
+    map[String(app.jobId)] = app.status;
+    return map;
+  }, {});
+
+  return changes;
 }
 
 function clearMessage() {
@@ -125,7 +145,12 @@ async function fetchApplications() {
       throw new Error('Unable to load applications.');
     }
     const data = await response.json();
-    applications = Array.isArray(data.applications) ? data.applications : [];
+    const newApplications = Array.isArray(data.applications) ? data.applications : [];
+    const statusChanges = detectStatusChanges(newApplications);
+    applications = newApplications;
+    if (statusChanges.length) {
+      setMessage(`Application status updated: ${statusChanges.join('; ')}`, 'success');
+    }
     renderApplications();
   } catch (error) {
     applications = [];
@@ -351,6 +376,7 @@ function renderJobs() {
 
 function updatePolling() {
   clearInterval(pollingInterval);
+  previousApplicationStatuses = {};
   fetchApplications();
   fetchPostedJobs();
   pollingInterval = setInterval(() => {
