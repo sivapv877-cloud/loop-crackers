@@ -14,6 +14,7 @@ const postedJobCountLabel = document.getElementById('posted-job-count');
 const postedJobsList = document.getElementById('posted-jobs-list');
 const userNameInput = document.getElementById('user-name');
 const userEmailInput = document.getElementById('user-email');
+const userSkillsInput = document.getElementById('user-skills');
 const userRoleSelect = document.getElementById('user-role');
 
 let jobs = [];
@@ -79,6 +80,29 @@ function shouldShowJobSeekerSections() {
 function shouldShowEmployerSections() {
   const user = getApplicantData(true);
   return user && user.role === 'employer' && user.email;
+}
+
+function getUserSkills() {
+  return userSkillsInput.value
+    .split(',')
+    .map((skill) => skill.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function computeMatchPercentage(jobSkills = [], userSkills = []) {
+  if (!Array.isArray(jobSkills) || !jobSkills.length || !Array.isArray(userSkills) || !userSkills.length) {
+    return 0;
+  }
+
+  const normalizedJobSkills = [...new Set(jobSkills
+    .filter(Boolean)
+    .map((skill) => skill.toLowerCase()))];
+  const normalizedUserSkills = [...new Set(userSkills)];
+  const matchedCount = normalizedJobSkills.filter((skill) => normalizedUserSkills.includes(skill)).length;
+
+  return normalizedJobSkills.length
+    ? Math.round((matchedCount / normalizedJobSkills.length) * 100)
+    : 0;
 }
 
 function getUserHeaderOptions() {
@@ -346,12 +370,18 @@ function renderJobs() {
     return;
   }
 
+  const userSkills = getUserSkills();
+
   jobsList.innerHTML = filteredJobs.map((job) => {
     const skills = Array.isArray(job.skills) ? job.skills.join(', ') : job.skills;
     const jobId = String(job._id);
     const isApplied = appliedJobIds.has(jobId);
     const appliedData = applications.find((app) => String(app.jobId) === jobId);
     const statusLabel = isApplied ? `<div class="job-status">Status: ${appliedData?.status || 'Applied'}</div>` : '';
+    const matchLabel = shouldShowJobSeekerSections() && userSkills.length
+      ? `<div class="job-match">You match ${computeMatchPercentage(job.skills, userSkills)}% of this job</div>`
+      : '';
+
     return `
       <article class="job-card">
         <h2>${job.title}</h2>
@@ -360,6 +390,7 @@ function renderJobs() {
           <span><strong>Skills:</strong> ${skills || 'N/A'}</span>
         </div>
         <p>${job.description}</p>
+        ${matchLabel}
         ${statusLabel}
         <button type="button" class="apply-button" data-job-id="${jobId}" ${isApplied ? 'disabled' : ''}>
           ${isApplied ? 'Applied' : 'Apply'}
@@ -393,6 +424,7 @@ clearFiltersButton.addEventListener('click', () => {
 
 skillFilter.addEventListener('input', renderJobs);
 companyFilter.addEventListener('input', renderJobs);
+userSkillsInput.addEventListener('input', renderJobs);
 refreshJobsButton.addEventListener('click', fetchJobs);
 userEmailInput.addEventListener('input', updatePolling);
 userRoleSelect.addEventListener('change', updatePolling);

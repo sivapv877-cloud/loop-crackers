@@ -139,6 +139,12 @@ button:hover {
   line-height: 1.6;
 }
 
+.job-match {
+  margin-top: 12px;
+  font-weight: 600;
+  color: #0f766e;
+}
+
 .job-status {
   margin-top: 12px;
   font-weight: 600;
