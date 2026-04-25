@@ -10,10 +10,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 24px;
 }
 
 .container {
-  width: min(600px, 90%);
+  width: min(900px, 95%);
   padding: 24px;
   border-radius: 16px;
   background: #ffffff;
@@ -22,15 +23,20 @@ body {
 
 h1 {
   margin-top: 0;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   text-align: center;
 }
 
-.form-group,
-.output-group {
+.filter-panel {
   display: grid;
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 20px;
+}
+
+.filter-field {
+  display: grid;
+  gap: 8px;
 }
 
 label {
@@ -46,7 +52,6 @@ input {
 }
 
 button {
-  width: 100%;
   padding: 12px 16px;
   border: none;
   border-radius: 10px;
@@ -60,12 +65,55 @@ button:hover {
   background: #2563eb;
 }
 
-textarea {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  resize: vertical;
-  font-family: inherit;
-  font-size: 1rem;
+.status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.jobs-list {
+  display: grid;
+  gap: 16px;
+}
+
+.job-card {
+  padding: 18px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.job-card h2 {
+  margin: 0 0 10px;
+}
+
+.job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  color: #334155;
+}
+
+.job-meta span {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.job-card p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.message {
+  padding: 24px;
+  border-radius: 14px;
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+  text-align: center;
+  color: #475569;
 }

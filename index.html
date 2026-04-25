@@ -3,21 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple Web App</title>
+  <title>Job Portal</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
-    <h1>Simple Web App</h1>
-    <div class="form-group">
-      <label for="user-input">Enter text:</label>
-      <input id="user-input" type="text" placeholder="Type something..." />
+    <h1>Job Portal</h1>
+    <div class="filter-panel">
+      <div class="filter-field">
+        <label for="skill-filter">Filter by skill</label>
+        <input id="skill-filter" type="text" placeholder="e.g. JavaScript" />
+      </div>
+      <div class="filter-field">
+        <label for="company-filter">Filter by company</label>
+        <input id="company-filter" type="text" placeholder="e.g. Acme Inc." />
+      </div>
+      <button id="clear-filters">Clear filters</button>
     </div>
-    <button id="submit-button">Show Output</button>
-    <div class="output-group">
-      <label for="output-area">Output:</label>
-      <textarea id="output-area" readonly rows="5" placeholder="Output will appear here..."></textarea>
+
+    <div class="status-bar">
+      <span id="job-count">Loading jobs...</span>
+      <button id="refresh-jobs">Refresh jobs</button>
     </div>
+
+    <div id="jobs-list" class="jobs-list"></div>
   </div>
   <script src="script.js"></script>
 </body>
