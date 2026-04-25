@@ -10,6 +10,7 @@ const DB_NAME = process.env.DB_NAME || 'job_portal';
 const COLLECTIONS = ['Users', 'Jobs', 'Applications'];
 const PASSWORD_OPTIONS = { iterations: 100000, keylen: 64, digest: 'sha512' };
 const VALID_ROLES = ['job_seeker', 'employer'];
+const APPLICATION_STATUSES = ['Applied', 'Under Review', 'Shortlisted', 'Interview', 'Selected', 'Rejected'];
 
 app.use(cors());
 app.use(express.json());
@@ -185,6 +186,7 @@ app.post('/applications', async (req, res) => {
     applicantName,
     applicantEmail: applicantEmail.toLowerCase(),
     applicantRole,
+    status: 'Applied',
     createdAt: new Date(),
   });
 
@@ -193,6 +195,39 @@ app.post('/applications', async (req, res) => {
     message: 'Application submitted successfully.',
     applicationId: result.insertedId,
   });
+});
+
+app.patch('/applications/:id/status', requireRole(['employer']), async (req, res) => {
+  const { status } = req.body;
+  const applicationId = req.params.id;
+
+  if (!status || !APPLICATION_STATUSES.includes(status)) {
+    return res.status(400).json({
+      success: false,
+      message: `Status is required and must be one of: ${APPLICATION_STATUSES.join(', ')}`,
+    });
+  }
+
+  const db = req.app.locals.db;
+  const applications = db.collection('Applications');
+
+  let objectId;
+  try {
+    objectId = new ObjectId(applicationId);
+  } catch (error) {
+    return res.status(400).json({ success: false, message: 'Invalid application ID.' });
+  }
+
+  const result = await applications.updateOne(
+    { _id: objectId },
+    { $set: { status, updatedAt: new Date() } },
+  );
+
+  if (result.matchedCount === 0) {
+    return res.status(404).json({ success: false, message: 'Application not found.' });
+  }
+
+  res.json({ success: true, message: 'Application status updated successfully.', status });
 });
 
 async function ensureCollections(db) {
