@@ -12,6 +12,7 @@
     <nav class="page-nav">
       <a href="index.html">Home</a>
       <a href="dashboard.html">Dashboard</a>
+      <a href="#" id="logout-link">Logout</a>
     </nav>
   </header>
 
@@ -30,11 +31,11 @@
         <section class="user-panel details-user-panel">
           <div class="filter-field">
             <label for="user-name">Your name</label>
-            <input id="user-name" type="text" placeholder="Job seeker name" />
+            <input id="user-name" type="text" placeholder="Job seeker name" readonly />
           </div>
           <div class="filter-field">
             <label for="user-email">Your email</label>
-            <input id="user-email" type="email" placeholder="name@example.com" />
+            <input id="user-email" type="email" placeholder="name@example.com" readonly />
           </div>
           <div class="filter-field">
             <label for="user-skills">Your skills</label>
@@ -42,7 +43,7 @@
           </div>
           <div class="filter-field">
             <label for="user-role">Your role</label>
-            <select id="user-role">
+            <select id="user-role" disabled>
               <option value="job_seeker">Job Seeker</option>
               <option value="employer">Employer</option>
             </select>

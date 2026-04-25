@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Loop Crackers</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-brand"><a href="index.html">Loop Crackers</a></div>
+    <nav class="page-nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="login.html" class="active">Login</a>
+    </nav>
+  </header>
+
+  <main class="container auth-container" id="login-root">
+    <div class="auth-card">
+      <h1>Login</h1>
+      <div id="auth-message" class="application-message"></div>
+      <form id="login-form">
+        <div class="filter-field">
+          <label for="login-email">Email</label>
+          <input id="login-email" type="email" placeholder="name@example.com" required />
+        </div>
+        <div class="filter-field">
+          <label for="login-password">Password</label>
+          <input id="login-password" type="password" placeholder="Password" required />
+        </div>
+        <button type="submit" class="button button-primary">Sign In</button>
+      </form>
+      <p class="auth-footer">New to Loop Crackers? <a href="register.html">Create an account</a></p>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

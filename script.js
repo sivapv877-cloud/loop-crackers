@@ -8,6 +8,7 @@ const refreshJobsButton = document.getElementById('refresh-jobs');
 const jobCountLabel = document.getElementById('job-count');
 const jobsList = document.getElementById('jobs-list');
 const applicationMessage = document.getElementById('application-message');
+const authMessage = document.getElementById('auth-message');
 const applicationsSection = document.getElementById('applications-section');
 const applicationCountLabel = document.getElementById('application-count');
 const applicationsList = document.getElementById('applications-list');
@@ -26,6 +27,11 @@ const jobDetailsMatch = document.getElementById('job-details-match');
 const jobDetailsProgress = document.getElementById('job-details-progress');
 const jobDetailsActions = document.getElementById('job-details-actions');
 const jobDetailsMessage = document.getElementById('job-details-message');
+const loginRoot = document.getElementById('login-root');
+const registerRoot = document.getElementById('register-root');
+const logoutLink = document.getElementById('logout-link');
+
+let authUser = null;
 
 let jobs = [];
 let applications = [];
@@ -34,7 +40,7 @@ let pollingInterval = null;
 let previousApplicationStatuses = {};
 
 function setMessage(text, type = 'info') {
-  const messageElement = applicationMessage || jobDetailsMessage;
+  const messageElement = applicationMessage || jobDetailsMessage || authMessage;
   if (!messageElement) {
     console.warn('No message element available');
     return;
@@ -64,7 +70,7 @@ function detectStatusChanges(newApplications) {
 }
 
 function clearMessage() {
-  const messageElement = applicationMessage || jobDetailsMessage;
+  const messageElement = applicationMessage || jobDetailsMessage || authMessage;
   if (!messageElement) {
     return;
   }
@@ -73,10 +79,42 @@ function clearMessage() {
   messageElement.className = 'application-message';
 }
 
+function loadAuthUser() {
+  try {
+    const stored = localStorage.getItem('authUser');
+    authUser = stored ? JSON.parse(stored) : null;
+  } catch (error) {
+    console.error('Failed to load auth user:', error);
+    authUser = null;
+  }
+}
+
+function saveAuthUser(user) {
+  authUser = user;
+  localStorage.setItem('authUser', JSON.stringify(user));
+}
+
+function clearAuthUser() {
+  authUser = null;
+  localStorage.removeItem('authUser');
+}
+
+function getAuthHeaders() {
+  return authUser && authUser.token ? { 'x-auth-token': authUser.token } : {};
+}
+
+function getUserHeaderOptions() {
+  return {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  };
+}
+
 function getApplicantData(allowEmptyEmail = false) {
-  const name = userNameInput.value.trim();
-  const email = userEmailInput.value.trim();
-  const role = userRoleSelect.value;
+  const name = (userNameInput?.value || authUser?.name || '').trim();
+  const email = (userEmailInput?.value || authUser?.email || '').trim();
+  const role = userRoleSelect?.value || authUser?.role;
 
   if (!name) {
     if (!allowEmptyEmail) {
@@ -104,10 +142,199 @@ function shouldShowEmployerSections() {
 }
 
 function getUserSkills() {
-  return userSkillsInput.value
+  return (userSkillsInput?.value || authUser?.skills?.join(', ') || '')
     .split(',')
     .map((skill) => skill.trim().toLowerCase())
     .filter(Boolean);
+}
+
+function populateUserFields() {
+  if (!authUser) {
+    return;
+  }
+
+  if (userNameInput) {
+    userNameInput.value = authUser.name || '';
+  }
+  if (userEmailInput) {
+    userEmailInput.value = authUser.email || '';
+  }
+  if (userSkillsInput) {
+    userSkillsInput.value = (authUser.skills || []).join(', ');
+  }
+  if (userRoleSelect) {
+    userRoleSelect.value = authUser.role || 'job_seeker';
+    userRoleSelect.disabled = true;
+  }
+}
+
+async function fetchUserProfile() {
+  if (!authUser?.token) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${apiUrl}/me`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to validate session');
+    }
+    const data = await response.json();
+    if (data.success && data.user) {
+      saveAuthUser({ ...authUser, ...data.user });
+      return data.user;
+    }
+  } catch (error) {
+    console.error('Failed to fetch user profile:', error);
+  }
+  return null;
+}
+
+async function ensureAuthenticated() {
+  loadAuthUser();
+  if (!authUser || !authUser.token) {
+    window.location.href = 'login.html';
+    return false;
+  }
+
+  const profile = await fetchUserProfile();
+  if (!profile) {
+    clearAuthUser();
+    window.location.href = 'login.html';
+    return false;
+  }
+
+  populateUserFields();
+  return true;
+}
+
+function logout() {
+  clearAuthUser();
+  window.location.href = 'login.html';
+}
+
+async function handleLoginSubmit(event) {
+  event.preventDefault();
+  clearMessage();
+
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+
+  if (!email || !password) {
+    setMessage('Email and password are required.', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${apiUrl}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Login failed');
+    }
+
+    saveAuthUser({
+      name: data.user.name,
+      email: data.user.email,
+      role: data.user.role,
+      token: data.user.token,
+      skills: [],
+    });
+    window.location.href = 'dashboard.html';
+  } catch (error) {
+    setMessage(error.message, 'error');
+  }
+}
+
+async function handleRegisterSubmit(event) {
+  event.preventDefault();
+  clearMessage();
+
+  const name = document.getElementById('register-name').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value;
+  const role = document.getElementById('register-role').value;
+
+  if (!name || !email || !password || !role) {
+    setMessage('All fields are required to register.', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${apiUrl}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, role }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Registration failed');
+    }
+
+    saveAuthUser({
+      name: data.user.name,
+      email: data.user.email,
+      role: data.user.role,
+      token: data.user.token,
+      skills: [],
+    });
+    window.location.href = 'dashboard.html';
+  } catch (error) {
+    setMessage(error.message, 'error');
+  }
+}
+
+function handleAuthPage() {
+  if (logoutLink) {
+    logoutLink.addEventListener('click', (event) => {
+      event.preventDefault();
+      logout();
+    });
+  }
+
+  if (loginRoot) {
+    if (authUser?.token) {
+      window.location.href = 'dashboard.html';
+      return;
+    }
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', handleLoginSubmit);
+    }
+  }
+
+  if (registerRoot) {
+    if (authUser?.token) {
+      window.location.href = 'dashboard.html';
+      return;
+    }
+    const registerForm = document.getElementById('register-form');
+    if (registerForm) {
+      registerForm.addEventListener('submit', handleRegisterSubmit);
+    }
+  }
+}
+
+function handleUserSkillUpdates() {
+  if (userSkillsInput) {
+    userSkillsInput.addEventListener('input', () => {
+      if (!authUser) {
+        return;
+      }
+      authUser.skills = getUserSkills();
+      saveAuthUser(authUser);
+      if (dashboardRoot) {
+        renderJobs();
+      }
+      if (jobDetailsRoot) {
+        fetchJobDetails();
+      }
+    });
+  }
 }
 
 function computeMatchPercentage(jobSkills = [], userSkills = []) {
@@ -140,6 +367,11 @@ function getProgressStep(status) {
     return 4;
   }
   return 1;
+}
+
+function getJobIdFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('jobId');
 }
 
 function getUserHeaderOptions() {
@@ -542,6 +774,11 @@ if (companyFilter) {
 }
 if (userSkillsInput) {
   userSkillsInput.addEventListener('input', () => {
+    if (!authUser) {
+      return;
+    }
+    authUser.skills = getUserSkills();
+    saveAuthUser(authUser);
     if (dashboardRoot) {
       renderJobs();
     }
@@ -552,24 +789,40 @@ if (userSkillsInput) {
 }
 if (clearFiltersButton) {
   clearFiltersButton.addEventListener('click', () => {
-    skillFilter.value = '';
-    companyFilter.value = '';
+    if (skillFilter) skillFilter.value = '';
+    if (companyFilter) companyFilter.value = '';
     renderJobs();
   });
 }
 if (refreshJobsButton) {
   refreshJobsButton.addEventListener('click', fetchJobs);
 }
-if (userEmailInput) {
-  userEmailInput.addEventListener('input', updatePolling);
-}
-if (userRoleSelect) {
-  userRoleSelect.addEventListener('change', updatePolling);
+if (logoutLink) {
+  logoutLink.addEventListener('click', (event) => {
+    event.preventDefault();
+    logout();
+  });
 }
 
-if (dashboardRoot) {
-  fetchJobs();
+async function initializePage() {
+  loadAuthUser();
+  handleAuthPage();
+
+  if (dashboardRoot) {
+    const authenticated = await ensureAuthenticated();
+    if (authenticated) {
+      await fetchJobs();
+    }
+    return;
+  }
+
+  if (jobDetailsRoot) {
+    const authenticated = await ensureAuthenticated();
+    if (authenticated) {
+      await fetchJobDetails();
+    }
+    return;
+  }
 }
-if (jobDetailsRoot) {
-  fetchJobDetails();
-}
+
+initializePage();

@@ -124,6 +124,40 @@ body {
   background: #2563eb;
 }
 
+.auth-container {
+  padding: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.auth-card {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 32px;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 14px 36px rgba(20, 30, 60, 0.08);
+}
+
+.auth-card h1 {
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+
+.auth-footer {
+  margin-top: 18px;
+  color: #475569;
+}
+
+.auth-footer a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.logout-link {
+  color: #ef4444;
+}
+
 .dashboard-container,
 .details-container {
   padding: 0;

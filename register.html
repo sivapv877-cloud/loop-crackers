@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register - Loop Crackers</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-brand"><a href="index.html">Loop Crackers</a></div>
+    <nav class="page-nav">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="register.html" class="active">Register</a>
+    </nav>
+  </header>
+
+  <main class="container auth-container" id="register-root">
+    <div class="auth-card">
+      <h1>Create Account</h1>
+      <div id="auth-message" class="application-message"></div>
+      <form id="register-form">
+        <div class="filter-field">
+          <label for="register-name">Full name</label>
+          <input id="register-name" type="text" placeholder="Your full name" required />
+        </div>
+        <div class="filter-field">
+          <label for="register-email">Email</label>
+          <input id="register-email" type="email" placeholder="name@example.com" required />
+        </div>
+        <div class="filter-field">
+          <label for="register-password">Password</label>
+          <input id="register-password" type="password" placeholder="Password" required />
+        </div>
+        <div class="filter-field">
+          <label for="register-role">Account type</label>
+          <select id="register-role">
+            <option value="job_seeker">Job Seeker</option>
+            <option value="employer">Employer</option>
+          </select>
+        </div>
+        <button type="submit" class="button button-primary">Create account</button>
+      </form>
+      <p class="auth-footer">Already have an account? <a href="login.html">Login</a></p>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
